@@ -46,3 +46,23 @@ def start(update: Update, context: CallbackContext):
         "I will send you scheduled reminders automatically.\n"
         "Use /help to see commands."
     )
+    
+
+# /help command
+def help_command(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "/start - Start the bot\n"
+        "/help - Show commands"
+    )
+
+# Main function to send reminders
+def run_reminders(updater):
+    bot = updater.bot
+    reminders = load_reminders()
+    print("⏰ Reminder scheduler started...")
+    while True:
+        now = datetime.now().strftime("%H:%M")
+        for reminder in reminders:
+            if reminder["time"] == now:
+                send_reminder(bot, reminder["message"], reminder["user_id"])
+        time.sleep(60)
