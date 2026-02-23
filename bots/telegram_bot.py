@@ -176,11 +176,28 @@ async def main():
                     freq = "Daily"
                     msg_part = msg_part[:-6].strip()
                     
-                try:
-                    datetime.strptime(time_str, "%H:%M") # Validate time format
+                    # Validate time format and calculate time remaining
+                    target_time = datetime.strptime(time_str, "%H:%M").time()
+                    now = datetime.now()
+                    target_datetime = now.replace(hour=target_time.hour, minute=target_time.minute, second=0, microsecond=0)
+                    
+                    if target_datetime < now:
+                        # If time has passed today, it will trigger tomorrow
+                        from datetime import timedelta
+                        target_datetime += timedelta(days=1)
+                        
+                    time_diff = target_datetime - now
+                    hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
+                    minutes, _ = divmod(remainder, 60)
+                    
+                    time_left_str = ""
+                    if hours > 0:
+                        time_left_str += f"{hours}h "
+                    time_left_str += f"{minutes}m"
+                        
                     with open(REMINDERS_FILE, "a", encoding="utf-8") as f:
                         f.write(f"\n{msg_part} | {time_str} | {update.message.chat_id} | {freq}")
-                    await update.message.reply_text(f"✅ Reminder set for {time_str}: {msg_part} ({freq})")
+                    await update.message.reply_text(f"✅ Reminder set for {time_str}: {msg_part} ({freq})\n⏱️ *Time remaining:* {time_left_str.strip()}", parse_mode="Markdown")
                 except ValueError:
                     await update.message.reply_text("❌ Invalid time format. Please use a valid 24-hour time like `14:30`.", parse_mode="Markdown")
                 except Exception as e:
