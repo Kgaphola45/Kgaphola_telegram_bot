@@ -125,7 +125,7 @@ async def main():
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
         if text == "➕ Add Reminder":
-            await update.message.reply_text("To add a reminder, reply with the format: `Reminder | HH:MM | Frequency`\nFrequency can be `Once` or `Daily` (default is Daily).\n(e.g., `Drink water | 14:30 | Daily` or `Meeting | 15:00 | Once`)", parse_mode="Markdown")
+            await update.message.reply_text("To add a reminder, simply send the time and your message:\n`HH:MM Your Message`\n*(e.g., `14:30 Drink water`)*\n\nYou can optionally add `Once` or `Daily` at the end (default is Daily).", parse_mode="Markdown")
         elif text == "📋 My Reminders":
             reminders = load_reminders()
             user_reminders = [r for r in reminders if r["user_id"] == update.message.chat_id]
@@ -147,23 +147,30 @@ async def main():
                 await update.message.reply_text("Tap a reminder below to delete it:", reply_markup=reply_markup)
         elif text == "❓ Help":
             await help_command(update, context)
-        elif "|" in text and re.match(r".*\|\s*\d{2}:\d{2}.*", text):
-            # Parse and save new reminder
-            parts = [p.strip() for p in text.split("|")]
-            msg, time_str = parts[0], parts[1]
-            freq = parts[2] if len(parts) > 2 else "Daily"
-            if freq not in ["Once", "Daily"]:
-                freq = "Daily"
-            
-            try:
-                datetime.strptime(time_str, "%H:%M") # Validate time format
-                with open(REMINDERS_FILE, "a") as f:
-                    f.write(f"\n{msg} | {time_str} | {update.message.chat_id} | {freq}")
-                await update.message.reply_text(f"✅ Reminder set for {time_str}: {msg} ({freq})")
-            except ValueError:
-                await update.message.reply_text("❌ Invalid time format. Please use HH:MM (24-hour).")
         else:
-            await update.message.reply_text("I didn't understand that. Please choose an option or send a valid reminder format.")
+            # Try to parse text as a new reminder
+            match = re.match(r"^(\d{2}:\d{2})\s+(.+)$", text.strip(), re.IGNORECASE)
+            if match:
+                time_str = match.group(1)
+                msg_part = match.group(2).strip()
+                
+                freq = "Daily"
+                if msg_part.lower().endswith(" once"):
+                    freq = "Once"
+                    msg_part = msg_part[:-5].strip()
+                elif msg_part.lower().endswith(" daily"):
+                    freq = "Daily"
+                    msg_part = msg_part[:-6].strip()
+                    
+                try:
+                    datetime.strptime(time_str, "%H:%M") # Validate time format
+                    with open(REMINDERS_FILE, "a") as f:
+                        f.write(f"\n{msg_part} | {time_str} | {update.message.chat_id} | {freq}")
+                    await update.message.reply_text(f"✅ Reminder set for {time_str}: {msg_part} ({freq})")
+                except ValueError:
+                    await update.message.reply_text("❌ Invalid time format. Please use a valid 24-hour time like `14:30`.", parse_mode="Markdown")
+            else:
+                await update.message.reply_text("❌ I didn't understand that.\n\nTo add a reminder, use the format:\n`HH:MM Your Message`\n*(e.g., `14:30 Drink water`)*", parse_mode="Markdown")
             
     async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
