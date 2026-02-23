@@ -1,20 +1,35 @@
 # bots/telegram_bot.py
 import os
-from telegram.ext import Updater, CommandHandler, CallbackContext
-from telegram import Update
-from dotenv import load_dotenv
+import asyncio
 from datetime import datetime
-import time
+from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Load bot token
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-# Paths
 REMINDERS_FILE = "../reminders/reminders.txt"
 LOG_FILE = "../logs/telegram_logs.txt"
 
-# Function to load reminders
+# --- Command Handlers ---
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 Hello! I am your Reminder Bot.\n"
+        "I will send scheduled reminders automatically.\n"
+        "Use /help to see commands."
+    )
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "/start - Start the bot\n"
+        "/help - Show commands"
+    )
+
+# --- Helper Functions ---
+
 def load_reminders():
     reminders = []
     with open(REMINDERS_FILE, "r") as file:
@@ -30,58 +45,43 @@ def load_reminders():
                 })
     return reminders
 
-# Send reminder to a user
-def send_reminder(bot, message, user_id):
-    bot.send_message(chat_id=user_id, text=message)
-    # Log message
+async def send_reminder(application, message, user_id):
+    await application.bot.send_message(chat_id=user_id, text=message)
+    # Log sent message
     with open(LOG_FILE, "a") as f:
         f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} | Telegram | {user_id} | {message}\n")
     print(f"✅ Sent to {user_id}: {message}")
 
-# /start command
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "👋 Hello! I am your Reminder Bot.\n"
-        "I will send you scheduled reminders automatically.\n"
-        "Use /help to see commands."
-    )
-
-# /help command
-def help_command(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "/start - Start the bot\n"
-        "/help - Show commands"
-    )
-
-# Main function to send reminders
-def run_reminders(updater):
-    bot = updater.bot
-    reminders = load_reminders()
+async def reminder_scheduler(application):
     print("⏰ Reminder scheduler started...")
     while True:
         now = datetime.now().strftime("%H:%M")
+        reminders = load_reminders()
         for reminder in reminders:
             if reminder["time"] == now:
-                send_reminder(bot, reminder["message"], reminder["user_id"])
-        time.sleep(60)
+                await send_reminder(application, reminder["message"], reminder["user_id"])
+        await asyncio.sleep(60)  # check every minute
 
-# Main entry
-def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+# --- Main Function ---
 
-    # Command handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
+async def main():
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Add command handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
 
     # Start the bot
-    updater.start_polling()
+    await application.initialize()
+    await application.start()
     print("🤖 Telegram bot is running...")
 
-    # Start reminder scheduler
-    run_reminders(updater)
+    # Run reminder scheduler
+    await reminder_scheduler(application)
 
-    updater.idle()
+    await application.stop()
+    await application.shutdown()
 
+# Run the bot
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
