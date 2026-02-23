@@ -16,10 +16,19 @@ LOG_FILE = "../logs/telegram_logs.txt"
 # --- Command Handlers ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from telegram import ReplyKeyboardMarkup
+    
+    reply_keyboard = [
+        ["➕ Add Reminder", "📋 My Reminders"],
+        ["❓ Help"]
+    ]
+    markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
+    
     await update.message.reply_text(
         "👋 Hello! I am your Reminder Bot.\n"
         "I will send scheduled reminders automatically.\n"
-        "Use /help to see commands."
+        "Choose an option below:",
+        reply_markup=markup
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,6 +81,39 @@ async def main():
     # Add command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
+
+    from telegram.ext import MessageHandler, filters
+    import re
+    
+    async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        text = update.message.text
+        if text == "➕ Add Reminder":
+            await update.message.reply_text("To add a reminder, please reply with the format: `Reminder | HH:MM`\n(e.g., `Drink water | 14:30`)", parse_mode="Markdown")
+        elif text == "📋 My Reminders":
+            reminders = load_reminders()
+            user_reminders = [r for r in reminders if r["user_id"] == update.message.chat_id]
+            if not user_reminders:
+                await update.message.reply_text("You have no reminders set.")
+            else:
+                msg = "Your Reminders:\n" + "\n".join([f"• {r['time']} - {r['message']}" for r in user_reminders])
+                await update.message.reply_text(msg)
+        elif text == "❓ Help":
+            await help_command(update, context)
+        elif "|" in text and re.match(r".*\|\s*\d{2}:\d{2}\s*", text):
+            # Parse and save new reminder
+            parts = [p.strip() for p in text.split("|")]
+            msg, time_str = parts[0], parts[1]
+            try:
+                datetime.strptime(time_str, "%H:%M") # Validate time format
+                with open(REMINDERS_FILE, "a") as f:
+                    f.write(f"\n{msg} | {time_str} | {update.message.chat_id}")
+                await update.message.reply_text(f"✅ Reminder set for {time_str}: {msg}")
+            except ValueError:
+                await update.message.reply_text("❌ Invalid time format. Please use HH:MM (24-hour).")
+        else:
+            await update.message.reply_text("I didn't understand that. Please choose an option or send a valid reminder format.")
+            
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Initialize and start the application
     await application.initialize()
