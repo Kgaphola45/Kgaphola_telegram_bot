@@ -12,6 +12,7 @@ BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 REMINDERS_FILE = "../reminders/reminders.txt"
 LOG_FILE = "../logs/telegram_logs.txt"
+USERS_FILE = "../reminders/users.json"
 
 # --- Command Handlers ---
 
@@ -20,7 +21,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     reply_keyboard = [
         ["➕ Add Reminder", "📋 My Reminders"],
-        ["❌ Delete Reminder", "❓ Help"]
+        ["❌ Delete Reminder", "🗑️ Clear All"],
+        ["🌍 Set Timezone", "❓ Help"]
     ]
     markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
     
@@ -97,13 +99,39 @@ async def send_reminder(application: Application, message, user_id):
         f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} | Telegram | {user_id} | {message}\n")
     print(f"✅ Sent to {user_id}: {message}")
 
+import json
+
+def load_user_timezones():
+    if not os.path.exists(USERS_FILE):
+        return {}
+    try:
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+        
+def save_user_timezone(user_id, offset):
+    data = load_user_timezones()
+    data[str(user_id)] = offset
+    with open(USERS_FILE, "w") as f:
+        json.dump(data, f)
+
 async def reminder_scheduler(application: Application):
     print("⏰ Reminder scheduler started...")
+    from datetime import timedelta
     while True:
-        now = datetime.now().strftime("%H:%M")
+        utc_now = datetime.utcnow()
         reminders = load_reminders()
+        timezones = load_user_timezones()
+        
         for reminder in reminders:
-            if reminder["time"] == now:
+            user_id = str(reminder["user_id"])
+            offset = timezones.get(user_id, 0) # Default to UTC+0 if not set
+            
+            # Calculate exactly what time it is for that user
+            user_now = (utc_now + timedelta(hours=offset)).strftime("%H:%M")
+            
+            if reminder["time"] == user_now:
                 await send_reminder(application, reminder["message"], reminder["user_id"])
                 if reminder.get("frequency", "Daily") == "Once":
                     delete_reminder_from_file(reminder)
@@ -145,8 +173,27 @@ async def main():
                     keyboard.append([InlineKeyboardButton(f"🗑️ {r['time']} - {r['message']} ({r.get('frequency', 'Daily')})", callback_data=f"del_{i}")])
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await update.message.reply_text("Tap a reminder below to delete it:", reply_markup=reply_markup)
+        elif text == "🗑️ Clear All":
+            reminders = load_reminders()
+            user_reminders = [r for r in reminders if r["user_id"] == update.message.chat_id]
+            if not user_reminders:
+                await update.message.reply_text("You have no reminders to clear.")
+            else:
+                for r in user_reminders:
+                    delete_reminder_from_file(r)
+                await update.message.reply_text("✅ All your reminders have been cleared!")
+        elif text == "🌍 Set Timezone":
+            await update.message.reply_text("Please reply with your UTC offset format:\n`UTC [+/-] [Hours]`\n*(e.g., `UTC +2` or `UTC -5`)*", parse_mode="Markdown")
         elif text == "❓ Help":
             await help_command(update, context)
+        elif text.upper().startswith("UTC "):
+            try:
+                offset_str = text[4:].strip().replace(" ", "")
+                offset = int(offset_str)
+                save_user_timezone(update.message.chat_id, offset)
+                await update.message.reply_text(f"🌍 Timezone successfully set to UTC {offset:+d}!")
+            except ValueError:
+                await update.message.reply_text("❌ Invalid timezone format. Please reply with: `UTC +2` or `UTC -5`", parse_mode="Markdown")
         else:
             # Try to parse text as a new reminder
             match = re.match(r"^(\d{2}:\d{2})\s+(.+)$", text.strip(), re.IGNORECASE)
