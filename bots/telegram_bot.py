@@ -81,7 +81,17 @@ def delete_reminder_from_file(reminder):
         return False
 
 async def send_reminder(application: Application, message, user_id):
-    await application.bot.send_message(chat_id=user_id, text=message)
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Mark as Done", callback_data=f"done_|{message}"),
+            InlineKeyboardButton("💤 Snooze (10m)", callback_data=f"snooze_|{message}")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await application.bot.send_message(chat_id=user_id, text=f"🔔 *Reminder:*\n\n{message}", reply_markup=reply_markup)
     # Log sent message
     with open(LOG_FILE, "a") as f:
         f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} | Telegram | {user_id} | {message}\n")
@@ -170,6 +180,22 @@ async def main():
                     await query.edit_message_text(text=f"🗑️ Deleted reminder: {reminder_to_delete['message']} at {reminder_to_delete['time']}")
                 else:
                     await query.edit_message_text(text="❌ Failed to delete reminder.")
+        elif query.data.startswith("done_|"):
+            # Mark the sent reminder as done by editing the message to remove buttons
+            msg = query.data.split("|")[1]
+            await query.edit_message_text(text=f"✅ *Done:*\n\n~{msg}~", parse_mode="MarkdownV2")
+        elif query.data.startswith("snooze_|"):
+            msg = query.data.split("|")[1]
+            # Calculate time + 10 mins
+            from datetime import timedelta
+            now = datetime.now()
+            snooze_time = (now + timedelta(minutes=10)).strftime("%H:%M")
+            
+            # Save as temporary "Once" reminder
+            with open(REMINDERS_FILE, "a") as f:
+                f.write(f"\n{msg} (Snoozed) | {snooze_time} | {query.message.chat_id} | Once")
+            
+            await query.edit_message_text(text=f"💤 Snoozed for 10 minutes.\nI will remind you again at {snooze_time}.")
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button_callback))
