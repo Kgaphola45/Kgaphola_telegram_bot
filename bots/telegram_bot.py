@@ -27,12 +27,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
     
-    await update.message.reply_text(
-        "👋 Hello! I am your Reminder Bot.\n"
-        "I will send scheduled reminders automatically.\n"
-        "Choose an option below:",
-        reply_markup=markup
-    )
+ await update.message.reply_text(
+    "👋 Hello! I am the Kgaphola Emmanuel Reminder Bot.\n\n"
+    "I help you stay organised by sending scheduled reminders directly on Telegram.\n"
+    "You can use me to set reminders for tasks, meetings, important events, or daily activities.\n\n"
+    "Choose an option below to get started 👇",
+    reply_markup=markup
+)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
