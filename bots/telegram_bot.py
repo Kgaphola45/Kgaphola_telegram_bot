@@ -66,3 +66,26 @@ def run_reminders(updater):
             if reminder["time"] == now:
                 send_reminder(bot, reminder["message"], reminder["user_id"])
         time.sleep(60)
+
+        
+
+# Main entry
+def main():
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    # Command handlers
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", help_command))
+
+    # Start the bot
+    updater.start_polling()
+    print("🤖 Telegram bot is running...")
+
+    # Start reminder scheduler
+    run_reminders(updater)
+
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
