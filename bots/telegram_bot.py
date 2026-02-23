@@ -10,9 +10,10 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-REMINDERS_FILE = "../reminders/reminders.txt"
-LOG_FILE = "../logs/telegram_logs.txt"
-USERS_FILE = "../reminders/users.json"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REMINDERS_FILE = os.path.join(BASE_DIR, "reminders", "reminders.txt")
+LOG_FILE = os.path.join(BASE_DIR, "logs", "telegram_logs.txt")
+USERS_FILE = os.path.join(BASE_DIR, "reminders", "users.json")
 
 # --- Command Handlers ---
 
