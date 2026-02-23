@@ -176,6 +176,7 @@ async def main():
                     freq = "Daily"
                     msg_part = msg_part[:-6].strip()
                     
+                try:
                     # Validate time format and calculate time remaining
                     target_time = datetime.strptime(time_str, "%H:%M").time()
                     now = datetime.now()
