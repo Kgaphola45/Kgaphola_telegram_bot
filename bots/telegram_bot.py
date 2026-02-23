@@ -212,11 +212,14 @@ async def main():
                     
                 try:
                     datetime.strptime(time_str, "%H:%M") # Validate time format
-                    with open(REMINDERS_FILE, "a") as f:
+                    with open(REMINDERS_FILE, "a", encoding="utf-8") as f:
                         f.write(f"\n{msg_part} | {time_str} | {update.message.chat_id} | {freq}")
                     await update.message.reply_text(f"✅ Reminder set for {time_str}: {msg_part} ({freq})")
                 except ValueError:
                     await update.message.reply_text("❌ Invalid time format. Please use a valid 24-hour time like `14:30`.", parse_mode="Markdown")
+                except Exception as e:
+                    print(f"Error saving reminder: {e}")
+                    await update.message.reply_text("❌ An error occurred while saving the reminder.", parse_mode="Markdown")
             else:
                 await update.message.reply_text("❌ I didn't understand that.\n\nTo add a reminder, use the format:\n`HH:MM Your Message`\n*(e.g., `14:30 Drink water`)*", parse_mode="Markdown")
             
