@@ -30,7 +30,6 @@ def load_reminders():
                 })
     return reminders
 
-
 # Send reminder to a user
 def send_reminder(bot, message, user_id):
     bot.send_message(chat_id=user_id, text=message)
@@ -46,7 +45,6 @@ def start(update: Update, context: CallbackContext):
         "I will send you scheduled reminders automatically.\n"
         "Use /help to see commands."
     )
-    
 
 # /help command
 def help_command(update: Update, context: CallbackContext):
@@ -66,8 +64,6 @@ def run_reminders(updater):
             if reminder["time"] == now:
                 send_reminder(bot, reminder["message"], reminder["user_id"])
         time.sleep(60)
-
-        
 
 # Main entry
 def main():
