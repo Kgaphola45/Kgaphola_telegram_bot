@@ -20,7 +20,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     reply_keyboard = [
         ["➕ Add Reminder", "📋 My Reminders"],
-        ["❓ Help"]
+        ["❌ Delete Reminder", "❓ Help"]
     ]
     markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
     
@@ -82,7 +82,8 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
 
-    from telegram.ext import MessageHandler, filters
+    from telegram.ext import MessageHandler, filters, CallbackQueryHandler
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     import re
     
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -97,6 +98,17 @@ async def main():
             else:
                 msg = "Your Reminders:\n" + "\n".join([f"• {r['time']} - {r['message']}" for r in user_reminders])
                 await update.message.reply_text(msg)
+        elif text == "❌ Delete Reminder":
+            reminders = load_reminders()
+            user_reminders = [r for r in reminders if r["user_id"] == update.message.chat_id]
+            if not user_reminders:
+                await update.message.reply_text("You have no reminders set to delete.")
+            else:
+                keyboard = []
+                for i, r in enumerate(user_reminders):
+                    keyboard.append([InlineKeyboardButton(f"🗑️ {r['time']} - {r['message']}", callback_data=f"del_{i}")])
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text("Tap a reminder below to delete it:", reply_markup=reply_markup)
         elif text == "❓ Help":
             await help_command(update, context)
         elif "|" in text and re.match(r".*\|\s*\d{2}:\d{2}\s*", text):
@@ -113,7 +125,39 @@ async def main():
         else:
             await update.message.reply_text("I didn't understand that. Please choose an option or send a valid reminder format.")
             
+    async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
+        
+        if query.data.startswith("del_"):
+            idx = int(query.data.split("_")[1])
+            reminders = load_reminders()
+            user_reminders = [r for r in reminders if r["user_id"] == query.message.chat_id]
+            
+            if idx < len(user_reminders):
+                reminder_to_delete = user_reminders[idx]
+                try:
+                    with open(REMINDERS_FILE, "r") as f:
+                        lines = f.readlines()
+                        
+                    with open(REMINDERS_FILE, "w") as f:
+                        deleted = False
+                        for line in lines:
+                            if line.strip() == "":
+                                continue
+                            parts = line.strip().split("|")
+                            if len(parts) == 3:
+                                r_msg, r_time, r_id = parts[0].strip(), parts[1].strip(), int(parts[2].strip())
+                                if not deleted and r_msg == reminder_to_delete['message'] and r_time == reminder_to_delete['time'] and r_id == reminder_to_delete['user_id']:
+                                    deleted = True
+                                    continue
+                            f.write(line)
+                    await query.edit_message_text(text=f"🗑️ Deleted reminder: {reminder_to_delete['message']} at {reminder_to_delete['time']}")
+                except Exception as e:
+                    await query.edit_message_text(text="❌ Failed to delete reminder.")
+
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(CallbackQueryHandler(button_callback))
 
     # Initialize and start the application
     await application.initialize()
