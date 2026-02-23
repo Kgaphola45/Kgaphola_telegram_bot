@@ -1,0 +1,60 @@
+Traceback (most recent call last):
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\site-packages\telegram\ext\_application.py", line 1054, in __run
+    loop.run_until_complete(self._bootstrap_initialize(max_retries=bootstrap_retries))
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 695, in run_until_complete
+    self._check_running()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 631, in _check_running
+    raise RuntimeError('This event loop is already running')
+RuntimeError: This event loop is already running
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\site-packages\telegram\ext\_application.py", line 1079, in __run
+    loop.run_until_complete(self.shutdown())
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 695, in run_until_complete
+    self._check_running()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 631, in _check_running
+    raise RuntimeError('This event loop is already running')
+RuntimeError: This event loop is already running
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Emmanuel_Kgaphola\Documents\Projects\Kgaphola_telegram_bot\bots\telegram_bot.py", line 84, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\Emmanuel_Kgaphola\Documents\Projects\Kgaphola_telegram_bot\bots\telegram_bot.py", line 78, in main
+    application.run_polling(),
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\site-packages\telegram\ext\_application.py", line 839, in run_polling
+    return self.__run(
+           ~~~~~~~~~~^
+        updater_coroutine=self.updater.start_polling(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+        close_loop=close_loop,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\site-packages\telegram\ext\_application.py", line 1084, in __run
+    loop.close()
+    ~~~~~~~~~~^^
+  File "C:\Users\Emmanuel_Kgaphola\AppData\Local\Programs\Python\Python314\Lib\asyncio\proactor_events.py", line 686, in close
+    raise RuntimeError("Cannot close a running event loop")
+RuntimeError: Cannot close a running event loop
+<sys>:0: RuntimeWarning: coroutine 'Application.shutdown' was never awaited
+<sys>:0: RuntimeWarning: coroutine 'Application._bootstrap_initialize' was never awaited

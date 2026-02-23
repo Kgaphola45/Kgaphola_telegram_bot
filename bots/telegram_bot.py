@@ -73,11 +73,21 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
 
-    # Run the bot with run_polling() which handles init automatically
-    await asyncio.gather(
-        application.run_polling(),
-        reminder_scheduler(application)
-    )
+    # Initialize and start the application
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    
+    try:
+        # Run our custom scheduler which runs indefinitely
+        await reminder_scheduler(application)
+    except asyncio.CancelledError:
+        pass
+    finally:
+        # Graceful shutdown
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
 
 # Run the bot
 if __name__ == "__main__":
