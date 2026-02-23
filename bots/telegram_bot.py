@@ -73,17 +73,11 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
 
-    # Start the bot
-    await application.start()
-    await application.updater.start_polling()
-    print("🤖 Telegram bot is running...")
-
-    # Start reminder scheduler
-    await reminder_scheduler(application)
-
-    await application.updater.stop()
-    await application.stop()
-    await application.shutdown()
+    # Run the bot with run_polling() which handles init automatically
+    await asyncio.gather(
+        application.run_polling(),
+        reminder_scheduler(application)
+    )
 
 # Run the bot
 if __name__ == "__main__":
