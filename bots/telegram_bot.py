@@ -9,14 +9,11 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 # Load environment variables
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 env_path = os.path.join(BASE_DIR, ".env")
-print(f"Looking for .env at: {env_path}")
-print(f".env exists: {os.path.exists(env_path)}")
 load_dotenv(env_path)
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-print(f"BOT_TOKEN loaded: {'Yes' if BOT_TOKEN else 'No'}")
 
 if not BOT_TOKEN:
-    raise ValueError(f"TELEGRAM_BOT_TOKEN is missing! Please ensure it is set in {env_path}")
+    raise ValueError(f"TELEGRAM_BOT_TOKEN is missing! Please ensure it is set in the environment or {env_path}")
 
 REMINDERS_FILE = os.path.join(BASE_DIR, "reminders", "reminders.txt")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "telegram_logs.txt")
