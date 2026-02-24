@@ -3,6 +3,7 @@ import os
 import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -14,6 +15,15 @@ BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 if not BOT_TOKEN:
     raise ValueError(f"TELEGRAM_BOT_TOKEN is missing! Please ensure it is set in the environment or {env_path}")
+
+TIMEZONE_STR = os.getenv("TIMEZONE", "Africa/Johannesburg")
+try:
+    LOCAL_TZ = ZoneInfo(TIMEZONE_STR)
+except Exception:
+    LOCAL_TZ = ZoneInfo("UTC")
+
+def get_local_now():
+    return datetime.now(LOCAL_TZ).replace(tzinfo=None) # We strip timezone info to remain compatible with existing string parsing logic.
 
 REMINDERS_FILE = os.path.join(BASE_DIR, "reminders", "reminders.txt")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "telegram_logs.txt")
@@ -102,13 +112,13 @@ async def send_reminder(application: Application, message, user_id):
     await application.bot.send_message(chat_id=user_id, text=f"🔔 *Reminder:*\n\n{message}", reply_markup=reply_markup)
     # Log sent message
     with open(LOG_FILE, "a") as f:
-        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} | Telegram | {user_id} | {message}\n")
+        f.write(f"{get_local_now().strftime('%Y-%m-%d %H:%M')} | Telegram | {user_id} | {message}\n")
     print(f"✅ Sent to {user_id}: {message}")
 
 async def reminder_scheduler(application: Application):
     print("⏰ Reminder scheduler started...")
     while True:
-        now = datetime.now().strftime("%H:%M")
+        now = get_local_now().strftime("%H:%M")
         reminders = load_reminders()
         
         for reminder in reminders:
@@ -183,7 +193,7 @@ async def main():
                 try:
                     # Validate time format and calculate time remaining
                     target_time = datetime.strptime(time_str, "%H:%M").time()
-                    now = datetime.now()
+                    now = get_local_now()
                     target_datetime = now.replace(hour=target_time.hour, minute=target_time.minute, second=0, microsecond=0)
                     
                     if target_datetime < now:
@@ -234,7 +244,7 @@ async def main():
             msg = query.data.split("|")[1]
             # Calculate time + 10 mins
             from datetime import timedelta
-            now = datetime.now()
+            now = get_local_now()
             snooze_time = (now + timedelta(minutes=10)).strftime("%H:%M")
             
             # Save as temporary "Once" reminder
