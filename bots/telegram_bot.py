@@ -7,10 +7,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Load environment variables
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REMINDERS_FILE = os.path.join(BASE_DIR, "reminders", "reminders.txt")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "telegram_logs.txt")
 USERS_FILE = os.path.join(BASE_DIR, "reminders", "users.json")
